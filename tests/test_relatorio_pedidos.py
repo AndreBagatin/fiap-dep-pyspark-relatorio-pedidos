@@ -156,6 +156,17 @@ def test_erro_em_etapa_e_logado_e_relancado_de_forma_controlada(relatorio, make_
     assert any("Falha na etapa 'Filtro do ano'" in m for m in caplog.messages)
 
 
+def test_contagens_podem_ser_desligadas(make_pedidos, make_pagamentos, caplog):
+    pedidos = make_pedidos([("p1", 10, 1, datetime(2025, 3, 1), "SP")])
+    pagamentos = make_pagamentos([("p1", "PIX", False, False)])
+
+    with caplog.at_level(logging.INFO):
+        RelatorioPedidos(ano=2025, log_contagens=False).gerar_relatorio(pedidos, pagamentos)
+
+    assert not any("registros" in m for m in caplog.messages)
+    assert any(m == "Etapa 'Ordenação' concluída" for m in caplog.messages)
+
+
 def test_registra_contagem_de_cada_etapa(relatorio, make_pedidos, make_pagamentos, caplog):
     pedidos = make_pedidos([("p1", 10, 1, datetime(2025, 3, 1), "SP")])
     pagamentos = make_pagamentos([("p1", "PIX", False, False)])

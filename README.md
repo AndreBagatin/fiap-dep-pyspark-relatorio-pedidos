@@ -49,12 +49,18 @@ Ordenação: `uf`, `forma_pagamento`, `data_pedido` (e `id_pedido` apenas como d
 
 Linux, macOS, WSL e GitHub Codespaces não exigem nada além disso.
 
-**Somente Windows (nativo):** o Hadoop usado pelo Spark precisa de `winutils.exe` e `hadoop.dll` para gravar em disco local. Coloque-os em uma pasta `...\hadoop\bin`, defina `HADOOP_HOME` apontando para `...\hadoop` e adicione `%HADOOP_HOME%\bin` ao `PATH` (ex.: https://github.com/cdarlint/winutils). Exemplo em PowerShell:
+**Somente Windows nativo (PowerShell):** o Hadoop embutido no Spark precisa de `winutils.exe` e `hadoop.dll` para gravar em disco local. Passo a passo:
+
+1. Baixe `winutils.exe` e `hadoop.dll` de https://github.com/cdarlint/winutils (pasta de uma versão `hadoop-3.x.y/bin`; o projeto foi validado com binários da linha 3.3, que funcionam com o PySpark 4).
+2. Salve os dois arquivos em `C:\hadoop\bin`.
+3. Em **cada** sessão do PowerShell, antes de rodar o pipeline ou os testes:
 
 ```powershell
 $env:HADOOP_HOME = "C:\hadoop"
 $env:Path = "$env:HADOOP_HOME\bin;$env:Path"
 ```
+
+Sem esse passo o erro típico é `UnsatisfiedLinkError ... NativeIO$Windows.access0`. Alternativas que dispensam o passo: **WSL2**, **Docker** ou **GitHub Codespaces** (Linux). Observação: o projeto foi desenvolvido e validado em Windows 10 nativo com Python 3.12 e Java 17; não foi executado no laboratório do professor.
 
 ## 3. Instalação
 
@@ -119,6 +125,8 @@ Todos os parâmetros ficam em [`config/settings.yaml`](config/settings.yaml) (li
 | `OUTPUT_PATH` | pasta de saída do parquet |
 | `ANO_RELATORIO` | ano do filtro (padrão 2025) |
 
+O log de contagem por etapa (`negocio.log_contagens` no YAML) pode ser desligado para evitar um `count()` extra em cada etapa.
+
 Exemplo: `ANO_RELATORIO=2024 OUTPUT_PATH=/tmp/rel2024 python main.py`.
 
 ## 6. Testes
@@ -127,7 +135,7 @@ Exemplo: `ANO_RELATORIO=2024 OUTPUT_PATH=/tmp/rel2024 python main.py`.
 pytest
 ```
 
-São 19 testes (`tests/`): filtro de status/fraude (inclusive nulos), filtro de 2025 (bordas do ano), cálculo do valor total, join, colunas finais, ordenação, fluxo de ponta a ponta, caminho de erro (log + `RelatorioPedidosError`), contagens em log, orquestração com *mocks* injetados, configuração (YAML/ambiente), schemas explícitos, leitura/escrita parquet e execução completa da `Application` com dados em disco temporário. Usam uma `SparkSession` local criada na fixture de `tests/conftest.py`.
+São 20 testes (`tests/`): filtro de status/fraude (inclusive nulos), filtro de 2025 (bordas do ano), cálculo do valor total, join, colunas finais, ordenação, fluxo de ponta a ponta, caminho de erro (log + `RelatorioPedidosError`), contagens em log, orquestração com *mocks* injetados, configuração (YAML/ambiente), schemas explícitos, leitura/escrita parquet e execução completa da `Application` com dados em disco temporário. Usam uma `SparkSession` local criada na fixture de `tests/conftest.py`.
 
 Lint/formatação: `ruff check .` e `ruff format --check .`.
 
@@ -136,7 +144,7 @@ Lint/formatação: `ruff check .` e `ruff format --check .`.
 ```
 .
 ├── main.py                              # Aggregation Root (classe Application)
-├── pyproject.toml  requirements.txt  MANIFEST.in  README.md  .gitignore
+├── pyproject.toml  requirements.txt  MANIFEST.in  README.md  LICENSE  .gitignore
 ├── config/settings.yaml                 # caminhos, opções de leitura, ano, Spark
 ├── src/relatorio_pedidos/
 │   ├── config/settings.py               # classe Settings (padrões + YAML + ambiente)

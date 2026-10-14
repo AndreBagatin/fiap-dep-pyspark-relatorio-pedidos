@@ -26,3 +26,4 @@ output:
 
 negocio:
   ano_relatorio: 2025
+  log_contagens: true  # false evita um job Spark extra (count) por etapa

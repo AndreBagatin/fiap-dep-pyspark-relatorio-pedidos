@@ -26,7 +26,7 @@ class Application:
             spark = session_manager.get_session()
             pipeline = Pipeline(
                 reader=DataReader(spark, settings),
-                relatorio=RelatorioPedidos(ano=settings.ano_relatorio),
+                relatorio=RelatorioPedidos(settings.ano_relatorio, settings.log_contagens),
                 writer=ParquetWriter(settings),
             )
             pipeline.run()

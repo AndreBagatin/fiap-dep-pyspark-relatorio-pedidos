@@ -3,7 +3,6 @@ import json
 from dataclasses import replace
 
 import pytest
-from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType
 
 from main import Application
@@ -11,6 +10,7 @@ from relatorio_pedidos.config.settings import Settings
 from relatorio_pedidos.io_utils.readers import DataReader
 from relatorio_pedidos.io_utils.schemas import PagamentosSchema, PedidosSchema
 from relatorio_pedidos.io_utils.writers import ParquetWriter
+from relatorio_pedidos.session.spark_session_manager import SparkSessionManager
 
 CABECALHO = "ID_PEDIDO;PRODUTO;VALOR_UNITARIO;QUANTIDADE;DATA_CRIACAO;UF;ID_CLIENTE\n"
 
@@ -86,7 +86,9 @@ def test_escrita_em_parquet_preserva_os_dados(spark, dados):
     assert lido.columns == PedidosSchema.get().fieldNames()
 
 
-def test_aplicacao_executa_o_pipeline_completo(dados, tmp_path):
+def test_aplicacao_executa_o_pipeline_completo(spark, dados, tmp_path, monkeypatch):
+    # Não encerra a sessão compartilhada da suíte; o encerramento é testado no teste de erro.
+    monkeypatch.setattr(SparkSessionManager, "stop", lambda self: None)
     arquivo = tmp_path / "settings.yaml"
     arquivo.write_text(
         f"spark:\n  master: 'local[1]'\n  shuffle_partitions: 1\n"
@@ -99,28 +101,15 @@ def test_aplicacao_executa_o_pipeline_completo(dados, tmp_path):
     codigo = Application(config_path=str(arquivo)).run()
 
     assert codigo == 0
-    # A Application encerra a sessão ao terminar (a fixture ficou obsoleta); abre outra para conferir.
-    sessao = SparkSession.builder.master("local[1]").getOrCreate()
-    linhas = sessao.read.parquet(dados.output_path).collect()
+    linhas = spark.read.parquet(dados.output_path).collect()
     assert [(r.id_pedido, r.uf, r.forma_pagamento, r.valor_total) for r in linhas] == [
         ("p1", "SP", "PIX", 3000.0)
     ]
 
 
-def test_cli_encerra_com_codigo_1_quando_a_entrada_nao_existe(tmp_path):
-    arquivo = tmp_path / "settings.yaml"
-    arquivo.write_text(
-        f"spark:\n  master: 'local[1]'\npaths:\n  pedidos: '{(tmp_path / 'nao-existe').as_posix()}'\n",
-        encoding="utf-8",
-    )
-
-    with pytest.raises(SystemExit) as saida:
-        Application.cli([str(arquivo)])
-
-    assert saida.value.code == 1
-
-
-def test_aplicacao_retorna_erro_quando_a_entrada_nao_existe(tmp_path):
+def test_aplicacao_propaga_erro_e_encerra_a_sessao_quando_a_entrada_nao_existe(tmp_path, monkeypatch):
+    encerrada = []
+    monkeypatch.setattr(SparkSessionManager, "stop", lambda self: encerrada.append(True))
     arquivo = tmp_path / "settings.yaml"
     arquivo.write_text(
         f"spark:\n  master: 'local[1]'\npaths:\n  pedidos: '{(tmp_path / 'nao-existe').as_posix()}'\n"
@@ -128,4 +117,7 @@ def test_aplicacao_retorna_erro_quando_a_entrada_nao_existe(tmp_path):
         encoding="utf-8",
     )
 
-    assert Application(config_path=str(arquivo)).run() == 1
+    with pytest.raises(Exception):
+        Application(config_path=str(arquivo)).run()
+
+    assert encerrada == [True]

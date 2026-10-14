@@ -4,7 +4,8 @@ from datetime import datetime
 import pytest
 from pyspark.sql.types import DoubleType, StringType, StructField, StructType, TimestampType
 
-from relatorio_pedidos.business.relatorio_pedidos import RelatorioPedidos, RelatorioPedidosError
+from relatorio_pedidos.business.exceptions import RelatorioPedidosError
+from relatorio_pedidos.business.relatorio_pedidos import RelatorioPedidos
 
 
 @pytest.fixture

@@ -11,9 +11,9 @@ from relatorio_pedidos.io_utils.schemas import PagamentosSchema, PedidosSchema
 os.environ.setdefault("PYSPARK_PYTHON", sys.executable)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def spark():
-    """SparkSession local compartilhada; recriada se algum teste (ex.: Application) a encerrar."""
+    """Uma única SparkSession local compartilhada por toda a suíte de testes."""
     sessao = (
         SparkSession.builder.appName("testes-relatorio-pedidos")
         .master("local[1]")

@@ -273,14 +273,34 @@ class PdfBuilder:
                 [
                     "RelatorioPedidos importa logging, configura logging.basicConfig(level=INFO) e "
                     "registra a contagem de cada etapa. Falhas caem em try/except, são registradas "
-                    "com logging.error e relançadas como RelatorioPedidosError.",
+                    "com logging.error e relançadas como RelatorioPedidosError; main.py e Pipeline não fazem "
+                    "logging nem try/except.",
+                ],
+            ),
+            (
+                "Pré-requisitos",
+                [
+                    "<b>Python</b> 3.10 ou superior (testado com 3.12) e <b>Java (JDK) 17 ou superior</b> "
+                    "(testado com Temurin 17); PySpark 4.x (fixado em 4.2.0 no requirements.txt).",
+                    "<b>Windows nativo:</b> o Spark precisa de winutils.exe e hadoop.dll em uma pasta "
+                    "bin, com HADOOP_HOME apontando para a pasta pai e %HADOOP_HOME%\\bin no PATH "
+                    "(passo a passo no README). Linux, macOS, WSL e Codespaces não precisam disso. "
+                    "O projeto foi validado em Windows 10; não foi executado no laboratório do professor.",
                 ],
             ),
             (
                 "Como executar (detalhes no README.md do repositório)",
                 [
-                    "pip install -r requirements.txt; pip install .; "
-                    "python scripts/download_datasets.py; python main.py; pytest",
+                    "<font name='Courier'>python -m venv .venv</font> e ativar o venv",
+                    "<font name='Courier'>pip install -r requirements.txt</font> e "
+                    "<font name='Courier'>pip install .</font>",
+                    "<font name='Courier'>python scripts/download_datasets.py</font> (baixa os datasets "
+                    "para data/input/)",
+                    "<font name='Courier'>python main.py</font> (gera data/output/relatorio_pedidos/)",
+                    "<font name='Courier'>python scripts/validar_saida.py</font> (confere o parquet) e "
+                    "<font name='Courier'>pytest</font> (testes)",
+                    "Fuso: timestamps interpretados em America/Sao_Paulo (configurável em "
+                    "config/settings.yaml); outras ferramentas que leem o parquet em UTC mostram +3h.",
                 ],
             ),
         ]

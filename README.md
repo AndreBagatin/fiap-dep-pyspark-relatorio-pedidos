@@ -138,7 +138,7 @@ Exemplo: `ANO_RELATORIO=2024 OUTPUT_PATH=/tmp/rel2024 python main.py`.
 pytest
 ```
 
-São 21 testes (`tests/`): filtro de status/fraude (inclusive nulos), filtro de 2025 (bordas do ano), cálculo do valor total, join, colunas finais, ordenação, fluxo de ponta a ponta, caminho de erro (log + `RelatorioPedidosError`), contagens em log, orquestração com *mocks* injetados, configuração (YAML/ambiente), schemas explícitos, leitura/escrita parquet e execução completa da `Application` com dados em disco temporário. Usam uma `SparkSession` local criada na fixture de `tests/conftest.py`.
+São 20 testes (`tests/`): filtro de status/fraude (inclusive nulos), filtro de 2025 (bordas do ano), cálculo do valor total, join, colunas finais, ordenação, fluxo de ponta a ponta, caminho de erro (log + `RelatorioPedidosError`), contagens em log, orquestração com *mocks* injetados, configuração (YAML/ambiente), schemas explícitos, leitura/escrita parquet e execução completa da `Application` com dados em disco temporário. Usam **uma única** `SparkSession` local, criada na fixture de escopo de sessão de `tests/conftest.py` (a suíte leva cerca de 1 min, quase todo gasto na inicialização do Spark/JVM e nos jobs locais).
 
 Lint/formatação: `ruff check .` e `ruff format --check .`.
 
@@ -157,6 +157,7 @@ Lint/formatação: `ruff check .` e `ruff format --check .`.
 │   │   ├── readers.py                   # DataReader (CSV e JSON com schema)
 │   │   └── writers.py                   # ParquetWriter
 │   ├── business/relatorio_pedidos.py    # RelatorioPedidos (regras + logging + try/except)
+│   ├── business/exceptions.py           # RelatorioPedidosError
 │   └── pipeline/
 │       ├── contracts.py                 # Protocols: DataSource, ReportBuilder, DataSink
 │       └── pipeline.py                  # Pipeline (orquestra leitura -> negócio -> escrita)
@@ -187,7 +188,7 @@ main.py  (Application = Aggregation Root)
 * Somente `main.py` instancia dependências; nenhuma classe cria internamente as suas (o `Pipeline` recebe `reader`, `relatorio` e `writer` no construtor, o que permite substituí-los por *mocks* nos testes).
 * **Schemas explícitos:** nenhum `inferSchema`; todos os DataFrames, inclusive os dos testes, são criados com `StructType` (incluindo o struct aninhado `avaliacao_fraude`).
 * **Logging:** `RelatorioPedidos` importa `logging`, chama `logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')` e registra cada etapa com a contagem de registros.
-* **Tratamento de erros:** cada etapa da lógica de negócio passa por `RelatorioPedidos._executar`, que usa `try/except`, registra com `logging.error` e relança `RelatorioPedidosError` (causa original encadeada). O `main.py` converte falhas em código de saída 1.
+* **Tratamento de erros:** cada etapa da lógica de negócio passa por `RelatorioPedidos._executar`, que usa `try/except`, registra com `logging.error` e relança `RelatorioPedidosError` (causa original encadeada). O `main.py` e o `Pipeline` não fazem logging nem `try/except`: a falha já foi registrada pela lógica de negócio e propaga (o Python termina com código 1); a sessão Spark é sempre encerrada em `finally`.
 
 ## 9. Documento de entrega
 

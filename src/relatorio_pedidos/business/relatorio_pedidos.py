@@ -4,11 +4,7 @@ from typing import Callable
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
-logger = logging.getLogger(__name__)
-
-
-class RelatorioPedidosError(Exception):
-    """Erro controlado lançado quando uma etapa da lógica de negócio falha."""
+from relatorio_pedidos.business.exceptions import RelatorioPedidosError
 
 
 class RelatorioPedidos:
@@ -17,6 +13,8 @@ class RelatorioPedidos:
     Etapas: filtro do ano -> valor total -> filtro de pagamentos -> join ->
     seleção de colunas -> ordenação.
     """
+
+    _logger = logging.getLogger(__name__)
 
     COLUNAS_RELATORIO = ["id_pedido", "uf", "forma_pagamento", "valor_total", "data_pedido"]
 
@@ -59,7 +57,7 @@ class RelatorioPedidos:
 
     def gerar_relatorio(self, pedidos: DataFrame, pagamentos: DataFrame) -> DataFrame:
         """Executa todas as etapas e devolve o DataFrame final do relatório."""
-        logger.info("Iniciando a geração do relatório (ano %s)", self._ano)
+        self._logger.info("Iniciando a geração do relatório (ano %s)", self._ano)
         pedidos = self._executar("Filtro do ano", self.filtrar_ano, pedidos)
         pedidos = self._executar("Cálculo do valor total", self.calcular_valor_total, pedidos)
         pagamentos = self._executar(
@@ -70,7 +68,7 @@ class RelatorioPedidos:
         df = self._executar("Join pedidos x pagamentos", self.juntar, pedidos, pagamentos)
         df = self._executar("Seleção de colunas", self.selecionar_colunas, df)
         df = self._executar("Ordenação", self.ordenar, df)
-        logger.info("Relatório gerado com sucesso")
+        self._logger.info("Relatório gerado com sucesso")
         return df
 
     def _executar(self, etapa: str, funcao: Callable[..., DataFrame], *args: DataFrame) -> DataFrame:
@@ -78,10 +76,10 @@ class RelatorioPedidos:
         try:
             resultado = funcao(*args)
             if self._log_contagens:
-                logger.info("Etapa '%s' concluída: %d registros", etapa, resultado.count())
+                self._logger.info("Etapa '%s' concluída: %d registros", etapa, resultado.count())
             else:
-                logger.info("Etapa '%s' concluída", etapa)
+                self._logger.info("Etapa '%s' concluída", etapa)
             return resultado
         except Exception as erro:
-            logger.error("Falha na etapa '%s': %s", etapa, erro)
+            self._logger.error("Falha na etapa '%s': %s", etapa, erro)
             raise RelatorioPedidosError(f"Falha na etapa '{etapa}'") from erro

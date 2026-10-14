@@ -3,7 +3,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from relatorio_pedidos.business.relatorio_pedidos import RelatorioPedidos, RelatorioPedidosError
+from relatorio_pedidos.business.exceptions import RelatorioPedidosError
+from relatorio_pedidos.business.relatorio_pedidos import RelatorioPedidos
 from relatorio_pedidos.pipeline.pipeline import Pipeline
 
 

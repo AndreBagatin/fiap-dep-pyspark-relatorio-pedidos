@@ -1,6 +1,5 @@
 """Aggregation Root: único lugar que instancia as dependências e as injeta."""
 
-import logging
 import sys
 
 from relatorio_pedidos.business.relatorio_pedidos import RelatorioPedidos
@@ -19,20 +18,21 @@ class Application:
         self._config_path = config_path
 
     def run(self) -> int:
+        """Compõe as dependências e executa o pipeline.
+
+        Falhas são registradas pela lógica de negócio e propagam (o Python termina com código 1);
+        a sessão Spark é sempre encerrada.
+        """
         settings = Settings.load(self._config_path)
         session_manager = SparkSessionManager(settings)
         try:
             spark = session_manager.get_session()
-            pipeline = Pipeline(
+            Pipeline(
                 reader=DataReader(spark, settings, PedidosSchema.get(), PagamentosSchema.get()),
                 relatorio=RelatorioPedidos(settings.ano_relatorio, settings.log_contagens),
                 writer=ParquetWriter(settings),
-            )
-            pipeline.run()
+            ).run()
             return 0
-        except Exception:  # apenas converte a falha em código de saída; o detalhe já foi logado
-            logging.getLogger(type(self).__name__).exception("Execução interrompida por erro")
-            return 1
         finally:
             session_manager.stop()
 

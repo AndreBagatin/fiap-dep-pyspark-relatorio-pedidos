@@ -22,6 +22,7 @@ class Settings:
     app_name: str = "relatorio-pedidos-recusados-legitimos"
     master: str = "local[*]"
     shuffle_partitions: int = 8
+    timezone: str = "America/Sao_Paulo"
 
     # Entrada
     pedidos_path: str = "data/input/datasets-csv-pedidos/data/pedidos/"
@@ -68,6 +69,7 @@ class Settings:
             "app_name": spark.get("app_name"),
             "master": spark.get("master"),
             "shuffle_partitions": spark.get("shuffle_partitions"),
+            "timezone": spark.get("timezone"),
             "pedidos_path": paths.get("pedidos"),
             "pagamentos_path": paths.get("pagamentos"),
             "pedidos_sep": pedidos_csv.get("sep"),

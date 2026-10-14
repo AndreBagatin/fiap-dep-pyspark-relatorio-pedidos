@@ -17,6 +17,7 @@ class SparkSessionManager:
                 SparkSession.builder.appName(self._settings.app_name)
                 .master(self._settings.master)
                 .config("spark.sql.shuffle.partitions", self._settings.shuffle_partitions)
+                .config("spark.sql.session.timeZone", self._settings.timezone)
                 .config("spark.ui.showConsoleProgress", "false")
                 .getOrCreate()
             )

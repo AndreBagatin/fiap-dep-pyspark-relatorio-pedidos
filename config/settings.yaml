@@ -5,6 +5,7 @@ spark:
   app_name: relatorio-pedidos-recusados-legitimos
   master: "local[*]"
   shuffle_partitions: 8
+  timezone: America/Sao_Paulo  # fuso usado para interpretar/exibir timestamps (saída independe da máquina)
 
 paths:
   pedidos: data/input/datasets-csv-pedidos/data/pedidos/

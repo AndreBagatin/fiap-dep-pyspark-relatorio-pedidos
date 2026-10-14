@@ -4,7 +4,6 @@ from typing import Callable
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -22,6 +21,7 @@ class RelatorioPedidos:
     COLUNAS_RELATORIO = ["id_pedido", "uf", "forma_pagamento", "valor_total", "data_pedido"]
 
     def __init__(self, ano: int, log_contagens: bool = True):
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
         self._ano = ano
         self._log_contagens = log_contagens
 

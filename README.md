@@ -37,6 +37,8 @@ Ordenação: `uf`, `forma_pagamento`, `data_pedido` (e `id_pedido` apenas como d
 * **Recusado e legítimo** = `status == false` **e** `avaliacao_fraude.fraude == false`. Registros com `status` ou `fraude` nulos não entram (não há como afirmar que foram recusados/legítimos).
 * Resultado com os dados reais: **1.473 pedidos**.
 * Tipos numéricos como `double` (e não `float`) para não introduzir erro de arredondamento no valor total.
+* **Fuso horário:** os timestamps (sem fuso) são interpretados no fuso configurado em `spark.timezone` (padrão `America/Sao_Paulo`); assim `data_pedido` não depende do fuso da máquina. Ferramentas que leem o parquet em UTC (ex.: pyarrow) mostrarão o mesmo instante com +3h.
+* O `config/settings.yaml` fica fora do pacote de propósito (configuração externa ao código, como no material do professor); com `pip install .` use-o a partir da raiz do projeto ou aponte `RELATORIO_CONFIG`.
 * O parquet é gravado em **1 partição** (`coalesce(1)` depois da ordenação), de modo que a ordem global do relatório fica preservada no arquivo.
 
 ## 2. Pré-requisitos
@@ -51,7 +53,7 @@ Linux, macOS, WSL e GitHub Codespaces não exigem nada além disso.
 
 **Somente Windows nativo (PowerShell):** o Hadoop embutido no Spark precisa de `winutils.exe` e `hadoop.dll` para gravar em disco local. Passo a passo:
 
-1. Baixe `winutils.exe` e `hadoop.dll` de https://github.com/cdarlint/winutils (pasta de uma versão `hadoop-3.x.y/bin`; o projeto foi validado com binários da linha 3.3, que funcionam com o PySpark 4).
+1. Baixe `winutils.exe` e `hadoop.dll` de https://github.com/cdarlint/winutils (use a pasta `hadoop-3.3.6/bin`; o projeto foi validado em Windows 10 com binários da linha 3.3, que funcionam com o PySpark 4).
 2. Salve os dois arquivos em `C:\hadoop\bin`.
 3. Em **cada** sessão do PowerShell, antes de rodar o pipeline ou os testes:
 

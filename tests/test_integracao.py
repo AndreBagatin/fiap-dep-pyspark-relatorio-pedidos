@@ -66,7 +66,7 @@ def dados(tmp_path):
 
 
 def test_schemas_sao_explicitos_e_incluem_o_objeto_aninhado(spark, dados):
-    reader = DataReader(spark, dados)
+    reader = DataReader(spark, dados, PedidosSchema.get(), PagamentosSchema.get())
 
     pedidos, pagamentos = reader.read_pedidos(), reader.read_pagamentos()
 
@@ -77,7 +77,7 @@ def test_schemas_sao_explicitos_e_incluem_o_objeto_aninhado(spark, dados):
 
 
 def test_escrita_em_parquet_preserva_os_dados(spark, dados):
-    reader = DataReader(spark, dados)
+    reader = DataReader(spark, dados, PedidosSchema.get(), PagamentosSchema.get())
     caminho = ParquetWriter(dados).write(reader.read_pedidos())
 
     lido = spark.read.parquet(caminho)

@@ -6,6 +6,7 @@ import sys
 from relatorio_pedidos.business.relatorio_pedidos import RelatorioPedidos
 from relatorio_pedidos.config.settings import Settings
 from relatorio_pedidos.io_utils.readers import DataReader
+from relatorio_pedidos.io_utils.schemas import PagamentosSchema, PedidosSchema
 from relatorio_pedidos.io_utils.writers import ParquetWriter
 from relatorio_pedidos.pipeline.pipeline import Pipeline
 from relatorio_pedidos.session.spark_session_manager import SparkSessionManager
@@ -23,13 +24,13 @@ class Application:
         try:
             spark = session_manager.get_session()
             pipeline = Pipeline(
-                reader=DataReader(spark, settings),
+                reader=DataReader(spark, settings, PedidosSchema.get(), PagamentosSchema.get()),
                 relatorio=RelatorioPedidos(settings.ano_relatorio, settings.log_contagens),
                 writer=ParquetWriter(settings),
             )
             pipeline.run()
             return 0
-        except Exception:
+        except Exception:  # apenas converte a falha em código de saída; o detalhe já foi logado
             logging.getLogger(type(self).__name__).exception("Execução interrompida por erro")
             return 1
         finally:

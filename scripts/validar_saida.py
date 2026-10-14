@@ -15,6 +15,7 @@ from pyspark.sql import functions as F  # noqa: E402
 from relatorio_pedidos.business.relatorio_pedidos import RelatorioPedidos  # noqa: E402
 from relatorio_pedidos.config.settings import Settings  # noqa: E402
 from relatorio_pedidos.io_utils.readers import DataReader  # noqa: E402
+from relatorio_pedidos.io_utils.schemas import PagamentosSchema, PedidosSchema  # noqa: E402
 
 
 class ValidadorSaida:
@@ -26,7 +27,7 @@ class ValidadorSaida:
 
     def run(self) -> bool:
         saida = self._spark.read.parquet(self._settings.output_path)
-        reader = DataReader(self._spark, self._settings)
+        reader = DataReader(self._spark, self._settings, PedidosSchema.get(), PagamentosSchema.get())
         pedidos, pagamentos = reader.read_pedidos(), reader.read_pagamentos()
         bruto = saida.join(pedidos, "id_pedido").join(pagamentos, "id_pedido")
         linhas = saida.collect()

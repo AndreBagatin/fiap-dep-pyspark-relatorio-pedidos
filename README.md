@@ -47,7 +47,7 @@ Ordenação: `uf`, `forma_pagamento`, `data_pedido` (e `id_pedido` apenas como d
 | --- | --- |
 | Python | 3.10 ou superior (testado com 3.12) |
 | Java (JDK) | 17 ou superior – exigido pelo PySpark 4 (testado com Temurin 17). Verifique com `java -version` |
-| PySpark | 4.x (instalado pelo pip; fixado em `requirements.txt`) |
+| PySpark | 4.x (`pyproject.toml` aceita `>=4.0,<5`; `requirements.txt` fixa 4.2.0, a versão testada) |
 
 Linux, macOS, WSL e GitHub Codespaces não exigem nada além disso.
 
@@ -176,7 +176,8 @@ main.py  (Application = Aggregation Root)
   │  instancia:
   ├── Settings.load()                      -> configuração
   ├── SparkSessionManager(settings)        -> sessão Spark
-  ├── DataReader(spark, settings)          -> leitura com schema explícito
+  ├── DataReader(spark, settings, PedidosSchema.get(), PagamentosSchema.get())
+  │                                        -> leitura; os schemas explícitos também são injetados
   ├── RelatorioPedidos(ano)                -> regras de negócio
   ├── ParquetWriter(settings)              -> escrita
   └── Pipeline(reader, relatorio, writer)  -> orquestração (recebe tudo pronto)

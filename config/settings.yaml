@@ -1,0 +1,28 @@
+# Configurações do pipeline (ver src/relatorio_pedidos/config/settings.py).
+# Variáveis de ambiente PEDIDOS_PATH, PAGAMENTOS_PATH, OUTPUT_PATH e ANO_RELATORIO
+# têm precedência sobre este arquivo.
+spark:
+  app_name: relatorio-pedidos-recusados-legitimos
+  master: "local[*]"
+  shuffle_partitions: 8
+
+paths:
+  pedidos: data/input/datasets-csv-pedidos/data/pedidos/
+  pagamentos: data/input/dataset-json-pagamentos/data/pagamentos/
+  output: data/output/relatorio_pedidos
+
+file_options:
+  mode: FAILFAST
+  pedidos_csv:
+    sep: ";"
+    header: true
+    compression: gzip
+  pagamentos_json:
+    compression: gzip
+
+output:
+  mode: overwrite
+  partitions: 1
+
+negocio:
+  ano_relatorio: 2025

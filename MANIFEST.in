@@ -1,0 +1,8 @@
+include README.md
+include requirements.txt
+include main.py
+include config/settings.yaml
+recursive-include scripts *.py
+recursive-include tests *.py
+recursive-include src *.py
+global-exclude __pycache__ *.py[cod]

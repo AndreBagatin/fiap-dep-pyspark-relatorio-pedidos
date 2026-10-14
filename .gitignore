@@ -1,0 +1,31 @@
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# Dados baixados e saída do pipeline (reproduzíveis via scripts/download_datasets.py e main.py)
+data/input/
+data/output/
+spark-warehouse/
+metastore_db/
+derby.log
+
+# Evidências intermediárias (imagens); o PDF final em entrega/ é versionado
+entrega/imagens/
+
+# IDEs / SO
+.idea/
+.vscode/
+.DS_Store
+
+# Logs locais
+*.log

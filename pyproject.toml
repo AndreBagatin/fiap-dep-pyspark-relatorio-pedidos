@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fiap-dep-pyspark-relatorio-pedidos"
+version = "1.0.0"
+description = "Relatório de pedidos com pagamento recusado e fraude=false (PySpark, POO e injeção de dependências)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Grupo FIAP - Data Engineering Programming" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pyspark>=4.0.0,<5.0.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+    "build>=1.0",
+    "pygments>=2.17",
+    "pillow>=10.0",
+    "reportlab>=4.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "."]
+testpaths = ["tests"]
+addopts = "-v"
+
+[tool.ruff]
+line-length = 110
+src = ["src", "tests", "."]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["main", "relatorio_pedidos"]

@@ -1,0 +1,7 @@
+-r requirements.txt
+ruff==0.17.0
+build==1.6.1
+# Usados apenas por scripts/gerar_evidencias.py (PDF de entrega)
+Pygments==2.21.0
+pillow==12.3.0
+reportlab==5.0.1

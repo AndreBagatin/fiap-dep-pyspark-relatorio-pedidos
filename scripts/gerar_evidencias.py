@@ -56,9 +56,14 @@ ARQUIVOS_CODIGO = [
     ("src/relatorio_pedidos/io_utils/readers.py", "Pacote io_utils: leitura de CSV e JSON com schema"),
     ("src/relatorio_pedidos/io_utils/writers.py", "Pacote io_utils: escrita em parquet"),
     ("src/relatorio_pedidos/business/relatorio_pedidos.py", "Pacote business: regras, logging e try/except"),
+    (
+        "src/relatorio_pedidos/pipeline/contracts.py",
+        "Pacote pipeline: contratos (Protocol) injetados no Pipeline",
+    ),
     ("src/relatorio_pedidos/pipeline/pipeline.py", "Pacote pipeline: orquestração"),
     ("pyproject.toml", "Empacotamento: pyproject.toml"),
     ("requirements.txt", "Empacotamento: requirements.txt"),
+    ("requirements-dev.txt", "Empacotamento: requirements-dev.txt"),
     ("MANIFEST.in", "Empacotamento: MANIFEST.in"),
     ("tests/conftest.py", "Testes: fixtures com schema explícito"),
     ("tests/test_relatorio_pedidos.py", "Testes unitários da lógica de negócio"),
@@ -297,7 +302,7 @@ class PdfBuilder:
                 titulo_atual = ev.titulo
             largura_px = Image(str(ev.imagem)).imageWidth
             altura_px = Image(str(ev.imagem)).imageHeight
-            escala = min(0.62, LARGURA_UTIL_PT / largura_px)
+            escala = min(0.5, LARGURA_UTIL_PT / largura_px)
             bloco.append(Paragraph(ev.legenda, self._leg))
             bloco.append(
                 Image(str(ev.imagem), width=largura_px * escala, height=altura_px * escala, hAlign="LEFT")
@@ -307,36 +312,50 @@ class PdfBuilder:
         return fluxo
 
 
-def main() -> None:
-    executor, maker = Executor(), ImageMaker(IMAGENS)
-    for antigo in IMAGENS.glob("*.png"):
-        antigo.unlink()
-    evidencias: list[Evidencia] = []
+class EvidenceGenerator:
+    """Executa pipeline, validação e testes, gera as imagens e monta o PDF."""
 
-    for caminho, descricao in ARQUIVOS_CODIGO:
-        evidencias += maker.codigo(caminho, descricao)
+    def __init__(self, executor: Executor, maker: ImageMaker):
+        self._executor = executor
+        self._maker = maker
 
-    print("Executando o pipeline ...")
-    log = executor.run([sys.executable, "main.py"])
-    evidencias += maker.terminal("Execução do pipeline (logs)", "python main.py", log)
+    def run(self) -> None:
+        for antigo in IMAGENS.glob("*.png"):
+            antigo.unlink()
+        evidencias: list[Evidencia] = []
+        for caminho, descricao in ARQUIVOS_CODIGO:
+            evidencias += self._maker.codigo(caminho, descricao)
 
-    print("Validando a saída ...")
-    validacao = executor.run([sys.executable, "scripts/validar_saida.py"])
-    checagens, amostra = validacao.split("root", 1)
-    evidencias += maker.terminal("Validações do parquet", "python scripts/validar_saida.py", checagens)
-    evidencias += maker.terminal(
-        "Amostra do parquet (schema e primeiras linhas)",
-        "python scripts/validar_saida.py",
-        "root" + amostra,
-    )
+        print("Executando o pipeline ...")
+        log = self._executor.run([sys.executable, "main.py"])
+        evidencias += self._maker.terminal("Execução do pipeline (logs)", "python main.py", log)
+        evidencias += self._maker.terminal(
+            "Arquivos do parquet gerado", "listagem de data/output/relatorio_pedidos", self._listagem()
+        )
 
-    print("Executando os testes ...")
-    testes = executor.run([sys.executable, "-m", "pytest", "-v", "--no-header", "-p", "no:cacheprovider"])
-    evidencias += maker.terminal("Execução dos testes (pytest)", "pytest -v", testes)
+        print("Validando a saída ...")
+        validacao = self._executor.run([sys.executable, "scripts/validar_saida.py"])
+        checagens, amostra = validacao.split("root", 1)
+        comando = "python scripts/validar_saida.py"
+        evidencias += self._maker.terminal("Validações do parquet", comando, checagens)
+        evidencias += self._maker.terminal(
+            "Amostra do parquet (schema e primeiras linhas)", comando, "root" + amostra
+        )
 
-    PdfBuilder(evidencias).build()
-    print(f"{len(evidencias)} imagens em {IMAGENS}; PDF em {PDF}")
+        print("Executando os testes ...")
+        testes = self._executor.run(
+            [sys.executable, "-m", "pytest", "-v", "--no-header", "-p", "no:cacheprovider"]
+        )
+        evidencias += self._maker.terminal("Execução dos testes (pytest)", "pytest -v", testes)
+
+        PdfBuilder(evidencias).build()
+        print(f"{len(evidencias)} imagens em {IMAGENS}; PDF em {PDF}")
+
+    @staticmethod
+    def _listagem() -> str:
+        pasta = RAIZ / "data" / "output" / "relatorio_pedidos"
+        return "\n".join(f"{arq.stat().st_size:>8} bytes  {arq.name}" for arq in sorted(pasta.iterdir()))
 
 
 if __name__ == "__main__":
-    main()
+    EvidenceGenerator(Executor(), ImageMaker(IMAGENS)).run()

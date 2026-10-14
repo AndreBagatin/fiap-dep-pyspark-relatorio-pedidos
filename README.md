@@ -76,11 +76,12 @@ source .venv/bin/activate
 # Windows (PowerShell):
 #   .\.venv\Scripts\Activate.ps1
 
-pip install -r requirements.txt
-pip install .
+pip install -r requirements.txt   # execução e testes (pyspark, pyyaml, pytest)
+pip install .                       # instala o pacote relatorio_pedidos
+# opcional, para lint e para regerar o PDF: pip install -r requirements-dev.txt
 ```
 
-* `pip install -r requirements.txt` instala as dependências fixadas (inclui as ferramentas de teste/lint e as usadas para gerar o PDF).
+* `requirements.txt` fixa as dependências de execução e de teste; `requirements-dev.txt` acrescenta lint (ruff), build e as ferramentas que geram o PDF.
 * `pip install .` instala o pacote `relatorio_pedidos` (usa `pyproject.toml` e `MANIFEST.in`). Para desenvolver, use `pip install -e .`.
 
 ## 4. Obter os datasets
@@ -137,7 +138,7 @@ Exemplo: `ANO_RELATORIO=2024 OUTPUT_PATH=/tmp/rel2024 python main.py`.
 pytest
 ```
 
-São 20 testes (`tests/`): filtro de status/fraude (inclusive nulos), filtro de 2025 (bordas do ano), cálculo do valor total, join, colunas finais, ordenação, fluxo de ponta a ponta, caminho de erro (log + `RelatorioPedidosError`), contagens em log, orquestração com *mocks* injetados, configuração (YAML/ambiente), schemas explícitos, leitura/escrita parquet e execução completa da `Application` com dados em disco temporário. Usam uma `SparkSession` local criada na fixture de `tests/conftest.py`.
+São 21 testes (`tests/`): filtro de status/fraude (inclusive nulos), filtro de 2025 (bordas do ano), cálculo do valor total, join, colunas finais, ordenação, fluxo de ponta a ponta, caminho de erro (log + `RelatorioPedidosError`), contagens em log, orquestração com *mocks* injetados, configuração (YAML/ambiente), schemas explícitos, leitura/escrita parquet e execução completa da `Application` com dados em disco temporário. Usam uma `SparkSession` local criada na fixture de `tests/conftest.py`.
 
 Lint/formatação: `ruff check .` e `ruff format --check .`.
 
@@ -146,7 +147,7 @@ Lint/formatação: `ruff check .` e `ruff format --check .`.
 ```
 .
 ├── main.py                              # Aggregation Root (classe Application)
-├── pyproject.toml  requirements.txt  MANIFEST.in  README.md  LICENSE  .gitignore
+├── pyproject.toml  requirements.txt  requirements-dev.txt  MANIFEST.in  README.md  LICENSE  .gitignore
 ├── config/settings.yaml                 # caminhos, opções de leitura, ano, Spark
 ├── src/relatorio_pedidos/
 │   ├── config/settings.py               # classe Settings (padrões + YAML + ambiente)
@@ -156,7 +157,9 @@ Lint/formatação: `ruff check .` e `ruff format --check .`.
 │   │   ├── readers.py                   # DataReader (CSV e JSON com schema)
 │   │   └── writers.py                   # ParquetWriter
 │   ├── business/relatorio_pedidos.py    # RelatorioPedidos (regras + logging + try/except)
-│   └── pipeline/pipeline.py             # Pipeline (orquestra leitura -> negócio -> escrita)
+│   └── pipeline/
+│       ├── contracts.py                 # Protocols: DataSource, ReportBuilder, DataSink
+│       └── pipeline.py                  # Pipeline (orquestra leitura -> negócio -> escrita)
 ├── scripts/
 │   ├── download_datasets.py             # baixa os datasets para data/input/
 │   ├── validar_saida.py                 # valida o parquet gerado
@@ -179,6 +182,7 @@ main.py  (Application = Aggregation Root)
   └── Pipeline(reader, relatorio, writer)  -> orquestração (recebe tudo pronto)
 ```
 
+* O `Pipeline` depende de contratos (`typing.Protocol` em `pipeline/contracts.py`), não de classes concretas: qualquer objeto com `read_pedidos/read_pagamentos`, `gerar_relatorio` e `write` pode ser injetado.
 * Somente `main.py` instancia dependências; nenhuma classe cria internamente as suas (o `Pipeline` recebe `reader`, `relatorio` e `writer` no construtor, o que permite substituí-los por *mocks* nos testes).
 * **Schemas explícitos:** nenhum `inferSchema`; todos os DataFrames, inclusive os dos testes, são criados com `StructType` (incluindo o struct aninhado `avaliacao_fraude`).
 * **Logging:** `RelatorioPedidos` importa `logging`, chama `logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')` e registra cada etapa com a contagem de registros.

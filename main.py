@@ -10,8 +10,6 @@ from relatorio_pedidos.io_utils.writers import ParquetWriter
 from relatorio_pedidos.pipeline.pipeline import Pipeline
 from relatorio_pedidos.session.spark_session_manager import SparkSessionManager
 
-logger = logging.getLogger(__name__)
-
 
 class Application:
     """Monta o grafo de dependências e executa o pipeline."""
@@ -32,11 +30,17 @@ class Application:
             pipeline.run()
             return 0
         except Exception:
-            logger.exception("Execução interrompida por erro")
+            logging.getLogger(type(self).__name__).exception("Execução interrompida por erro")
             return 1
         finally:
             session_manager.stop()
 
+    @classmethod
+    def cli(cls, argv: list[str] | None = None) -> None:
+        """Ponto de entrada de linha de comando: [caminho_do_yaml] opcional."""
+        args = sys.argv[1:] if argv is None else argv
+        sys.exit(cls(config_path=args[0] if args else None).run())
+
 
 if __name__ == "__main__":
-    sys.exit(Application(config_path=sys.argv[1] if len(sys.argv) > 1 else None).run())
+    Application.cli()

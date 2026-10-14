@@ -107,6 +107,19 @@ def test_aplicacao_executa_o_pipeline_completo(dados, tmp_path):
     ]
 
 
+def test_cli_encerra_com_codigo_1_quando_a_entrada_nao_existe(tmp_path):
+    arquivo = tmp_path / "settings.yaml"
+    arquivo.write_text(
+        f"spark:\n  master: 'local[1]'\npaths:\n  pedidos: '{(tmp_path / 'nao-existe').as_posix()}'\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(SystemExit) as saida:
+        Application.cli([str(arquivo)])
+
+    assert saida.value.code == 1
+
+
 def test_aplicacao_retorna_erro_quando_a_entrada_nao_existe(tmp_path):
     arquivo = tmp_path / "settings.yaml"
     arquivo.write_text(

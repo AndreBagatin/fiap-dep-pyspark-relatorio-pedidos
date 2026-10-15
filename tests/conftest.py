@@ -26,6 +26,14 @@ def spark():
     return sessao
 
 
+@pytest.fixture(autouse=True)
+def fuso_da_sessao_preservado(spark):
+    """Restaura o fuso da sessão compartilhada (a Application o altera ao reaproveitá-la)."""
+    original = spark.conf.get("spark.sql.session.timeZone")
+    yield
+    spark.conf.set("spark.sql.session.timeZone", original)
+
+
 def pytest_sessionfinish(session, exitstatus):
     ativa = SparkSession.getActiveSession()
     if ativa is not None:

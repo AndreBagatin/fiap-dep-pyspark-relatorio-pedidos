@@ -1,9 +1,10 @@
 import gzip
 import json
-from datetime import datetime
 from dataclasses import replace
+from datetime import datetime
 
 import pytest
+from pyspark.errors import AnalysisException
 from pyspark.sql.types import StructType
 
 from main import Application
@@ -119,7 +120,7 @@ def test_aplicacao_propaga_erro_e_encerra_a_sessao_quando_a_entrada_nao_existe(t
         encoding="utf-8",
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(AnalysisException):
         Application(config_path=str(arquivo)).run()
 
     assert encerrada == [True]

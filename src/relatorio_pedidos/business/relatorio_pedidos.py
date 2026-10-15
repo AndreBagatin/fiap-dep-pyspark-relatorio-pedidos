@@ -18,10 +18,9 @@ class RelatorioPedidos:
 
     COLUNAS_RELATORIO = ["id_pedido", "uf", "forma_pagamento", "valor_total", "data_pedido"]
 
-    def __init__(self, ano: int, log_contagens: bool = True):
+    def __init__(self, ano: int):
         logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
         self._ano = ano
-        self._log_contagens = log_contagens
 
     def filtrar_pagamentos_recusados_legitimos(self, pagamentos: DataFrame) -> DataFrame:
         """Mantém pagamentos recusados (status=false) avaliados como legítimos (fraude=false)."""
@@ -75,10 +74,8 @@ class RelatorioPedidos:
         """Roda uma etapa registrando a contagem de registros; falhas viram RelatorioPedidosError."""
         try:
             resultado = funcao(*args)
-            if self._log_contagens:
-                self._logger.info("Etapa '%s' concluída: %d registros", etapa, resultado.count())
-            else:
-                self._logger.info("Etapa '%s' concluída", etapa)
+            # count() força a execução (o Spark é lazy): falhas de execução caem neste try/except.
+            self._logger.info("Etapa '%s' concluída: %d registros", etapa, resultado.count())
             return resultado
         except Exception as erro:
             self._logger.error("Falha na etapa '%s': %s", etapa, erro)

@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 
 import pytest
+from pyspark.sql import functions as F
 from pyspark.sql.types import DoubleType, StringType, StructField, StructType, TimestampType
 
 from relatorio_pedidos.business.exceptions import RelatorioPedidosError
@@ -157,15 +158,27 @@ def test_erro_em_etapa_e_logado_e_relancado_de_forma_controlada(relatorio, make_
     assert any("Falha na etapa 'Filtro do ano'" in m for m in caplog.messages)
 
 
-def test_contagens_podem_ser_desligadas(make_pedidos, make_pagamentos, caplog):
+def test_erro_de_execucao_lazy_tambem_e_logado_e_relancado(relatorio, make_pedidos, caplog):
     pedidos = make_pedidos([("p1", 10, 1, datetime(2025, 3, 1), "SP")])
-    pagamentos = make_pagamentos([("p1", "PIX", False, False)])
 
-    with caplog.at_level(logging.INFO):
-        RelatorioPedidos(ano=2025, log_contagens=False).gerar_relatorio(pedidos, pagamentos)
+    def etapa_que_falha_so_na_execucao(df):
+        return df.filter(F.col("uf").cast("int") > 0)  # ANSI: "SP" -> int falha ao executar, não ao planejar
 
-    assert not any("registros" in m for m in caplog.messages)
-    assert any(m == "Etapa 'Ordenação' concluída" for m in caplog.messages)
+    with caplog.at_level(logging.ERROR):
+        with pytest.raises(RelatorioPedidosError, match="Etapa que falha"):
+            relatorio._executar("Etapa que falha", etapa_que_falha_so_na_execucao, pedidos)
+
+    assert any("Falha na etapa 'Etapa que falha'" in m for m in caplog.messages)
+
+
+def test_valor_total_fica_nulo_quando_quantidade_e_nula(relatorio, make_pedidos):
+    pedidos = make_pedidos([("p1", 10, 1, datetime(2025, 3, 1), "SP")]).withColumn(
+        "quantidade", F.lit(None).cast("long")
+    )
+
+    linha = relatorio.calcular_valor_total(pedidos).collect()[0]
+
+    assert linha.valor_total is None
 
 
 def test_registra_contagem_de_cada_etapa(relatorio, make_pedidos, make_pagamentos, caplog):

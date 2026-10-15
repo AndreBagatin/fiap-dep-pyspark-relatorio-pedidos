@@ -22,7 +22,7 @@ class Settings:
     app_name: str = "relatorio-pedidos-recusados-legitimos"
     master: str = "local[*]"
     shuffle_partitions: int = 8
-    timezone: str = "America/Sao_Paulo"
+    timezone: str = "UTC"
 
     # Entrada
     pedidos_path: str = "data/input/datasets-csv-pedidos/data/pedidos/"
@@ -42,7 +42,6 @@ class Settings:
 
     # Regras de negócio
     ano_relatorio: int = 2025
-    log_contagens: bool = True
 
     ENV_CONFIG = "RELATORIO_CONFIG"
     DEFAULT_CONFIG_FILE = "config/settings.yaml"
@@ -81,7 +80,6 @@ class Settings:
             "output_mode": output.get("mode"),
             "output_partitions": output.get("partitions"),
             "ano_relatorio": negocio.get("ano_relatorio"),
-            "log_contagens": negocio.get("log_contagens"),
         }
         return replace(base, **{k: v for k, v in valores.items() if v is not None})
 

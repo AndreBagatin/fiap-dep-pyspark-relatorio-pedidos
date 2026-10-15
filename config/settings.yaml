@@ -5,7 +5,7 @@ spark:
   app_name: relatorio-pedidos-recusados-legitimos
   master: "local[*]"
   shuffle_partitions: 8
-  timezone: America/Sao_Paulo  # fuso usado para interpretar/exibir timestamps (saída independe da máquina)
+  timezone: UTC  # fuso usado para interpretar os timestamps; UTC mantém data_pedido idêntica ao CSV em qualquer leitor
 
 paths:
   pedidos: data/input/datasets-csv-pedidos/data/pedidos/
@@ -27,4 +27,3 @@ output:
 
 negocio:
   ano_relatorio: 2025
-  log_contagens: true  # false evita um job Spark extra (count) por etapa

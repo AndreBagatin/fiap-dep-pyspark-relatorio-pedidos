@@ -37,7 +37,7 @@ Ordenação: `uf`, `forma_pagamento`, `data_pedido` (e `id_pedido` apenas como d
 * **Recusado e legítimo** = `status == false` **e** `avaliacao_fraude.fraude == false`. Registros com `status` ou `fraude` nulos não entram (não há como afirmar que foram recusados/legítimos).
 * Resultado com os dados reais: **1.473 pedidos**.
 * Tipos numéricos como `double` (e não `float`) para não introduzir erro de arredondamento no valor total.
-* **Fuso horário:** os timestamps (sem fuso) são interpretados no fuso configurado em `spark.timezone` (padrão `America/Sao_Paulo`); assim `data_pedido` não depende do fuso da máquina. Ferramentas que leem o parquet em UTC (ex.: pyarrow) mostrarão o mesmo instante com +3h.
+* **Fuso horário:** os timestamps (sem fuso) são interpretados no fuso configurado em `spark.timezone` (padrão `UTC`); assim `data_pedido` é idêntica ao CSV de origem e não depende do fuso da máquina, seja lido com Spark, pandas ou pyarrow. Para outro fuso, altere `spark.timezone` (os leitores fora do Spark mostrarão o instante em UTC).
 * O `config/settings.yaml` fica fora do pacote de propósito (configuração externa ao código, como no material do professor); com `pip install .` use-o a partir da raiz do projeto ou aponte `RELATORIO_CONFIG`.
 * O parquet é gravado em **1 partição** (`coalesce(1)` depois da ordenação), de modo que a ordem global do relatório fica preservada no arquivo.
 
@@ -59,7 +59,7 @@ Linux, macOS, WSL e GitHub Codespaces não exigem nada além disso.
 python scripts/setup_windows_hadoop.py
 ```
 
-   Ele salva `winutils.exe` e `hadoop.dll` (hadoop-3.3.6/bin de https://github.com/cdarlint/winutils) em `tools/hadoop/bin` e imprime os dois comandos do passo 2. Manualmente: salve os dois arquivos em `C:\hadoop\bin` e use `C:\hadoop` como `HADOOP_HOME`.
+   Ele confere o SHA-256 e salva `winutils.exe` e `hadoop.dll` (hadoop-3.3.6/bin de https://github.com/cdarlint/winutils) em `tools/hadoop/bin` e imprime os dois comandos do passo 2. Manualmente: salve os dois arquivos em `C:\hadoop\bin` e use `C:\hadoop` como `HADOOP_HOME`.
 2. Em **cada** sessão do PowerShell, antes de rodar o pipeline ou os testes (ajuste o caminho se usou outra pasta):
 
 ```powershell
@@ -133,8 +133,6 @@ Todos os parâmetros ficam em [`config/settings.yaml`](config/settings.yaml) (li
 | `OUTPUT_PATH` | pasta de saída do parquet |
 | `ANO_RELATORIO` | ano do filtro (padrão 2025) |
 
-O log de contagem por etapa (`negocio.log_contagens` no YAML) pode ser desligado para evitar um `count()` extra em cada etapa.
-
 Exemplo: `ANO_RELATORIO=2024 OUTPUT_PATH=/tmp/rel2024 python main.py`.
 
 ## 6. Testes
@@ -143,7 +141,7 @@ Exemplo: `ANO_RELATORIO=2024 OUTPUT_PATH=/tmp/rel2024 python main.py`.
 pytest
 ```
 
-São 22 testes (`tests/`): filtro de status/fraude (inclusive nulos), filtro de 2025 (bordas do ano), cálculo do valor total, join, colunas finais, ordenação, fluxo de ponta a ponta, caminho de erro (log + `RelatorioPedidosError`), contagens em log, orquestração com *mocks* injetados, configuração (YAML/ambiente), schemas explícitos, leitura/escrita parquet e execução completa da `Application` com dados em disco temporário. Usam **uma única** `SparkSession` local, criada na fixture de escopo de sessão de `tests/conftest.py` (a suíte leva cerca de 1 min, quase todo gasto na inicialização do Spark/JVM e nos jobs locais).
+São 23 testes (`tests/`): filtro de status/fraude (inclusive nulos), filtro de 2025 (bordas do ano), cálculo do valor total, join, colunas finais, ordenação, fluxo de ponta a ponta, caminho de erro (log + `RelatorioPedidosError`), erros de execução (lazy) registrados em log, contagens em log, orquestração com *mocks* injetados, configuração (YAML/ambiente), schemas explícitos, leitura/escrita parquet e execução completa da `Application` com dados em disco temporário. Usam **uma única** `SparkSession` local, criada na fixture de escopo de sessão de `tests/conftest.py` (a suíte leva cerca de 1 min, quase todo gasto na inicialização do Spark/JVM e nos jobs locais).
 
 Lint/formatação: `ruff check .` e `ruff format --check .`.
 
@@ -185,7 +183,7 @@ main.py  (Application = Aggregation Root)
   ├── SparkSessionManager(settings)        -> sessão Spark
   ├── DataReader(spark, settings, PedidosSchema.get(), PagamentosSchema.get())
   │                                        -> leitura; os schemas explícitos também são injetados
-  ├── RelatorioPedidos(ano)                -> regras de negócio
+  ├── RelatorioPedidos(ano)                -> regras de negócio (logging + try/except)
   ├── ParquetWriter(settings)              -> escrita
   └── Pipeline(reader, relatorio, writer)  -> orquestração (recebe tudo pronto)
 ```

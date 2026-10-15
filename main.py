@@ -29,7 +29,7 @@ class Application:
             spark = session_manager.get_session()
             Pipeline(
                 reader=DataReader(spark, settings, PedidosSchema.get(), PagamentosSchema.get()),
-                relatorio=RelatorioPedidos(settings.ano_relatorio, settings.log_contagens),
+                relatorio=RelatorioPedidos(settings.ano_relatorio),
                 writer=ParquetWriter(settings),
             ).run()
             return 0

@@ -300,8 +300,8 @@ class PdfBuilder:
                     "<font name='Courier'>python main.py</font> (gera data/output/relatorio_pedidos/)",
                     "<font name='Courier'>python scripts/validar_saida.py</font> (confere o parquet) e "
                     "<font name='Courier'>pytest</font> (testes)",
-                    "Fuso: timestamps interpretados em America/Sao_Paulo (configurável em "
-                    "config/settings.yaml); outras ferramentas que leem o parquet em UTC mostram +3h.",
+                    "Fuso: timestamps interpretados em UTC (configurável em config/settings.yaml), "
+                    "de modo que data_pedido no parquet é idêntica ao CSV em qualquer leitor.",
                 ],
             ),
         ]

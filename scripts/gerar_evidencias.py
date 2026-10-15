@@ -68,6 +68,7 @@ ARQUIVOS_CODIGO = [
     ("tests/conftest.py", "Testes: fixtures com schema explícito"),
     ("tests/test_relatorio_pedidos.py", "Testes unitários da lógica de negócio"),
     ("tests/test_pipeline.py", "Testes da orquestração com dependências injetadas (mocks)"),
+    ("tests/test_integracao.py", "Testes de integração: schemas, parquet e ordem gravada"),
 ]
 RUIDO = (
     "WARN",

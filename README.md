@@ -53,12 +53,17 @@ Linux, macOS, WSL e GitHub Codespaces não exigem nada além disso.
 
 **Somente Windows nativo (PowerShell):** o Hadoop embutido no Spark precisa de `winutils.exe` e `hadoop.dll` para gravar em disco local. Passo a passo:
 
-1. Baixe `winutils.exe` e `hadoop.dll` de https://github.com/cdarlint/winutils (use a pasta `hadoop-3.3.6/bin`; o projeto foi validado em Windows 10 com binários da linha 3.3, que funcionam com o PySpark 4).
-2. Salve os dois arquivos em `C:\hadoop\bin`.
-3. Em **cada** sessão do PowerShell, antes de rodar o pipeline ou os testes:
+1. Baixe os binários automaticamente (com o venv ativo, a partir da raiz do projeto):
 
 ```powershell
-$env:HADOOP_HOME = "C:\hadoop"
+python scripts/setup_windows_hadoop.py
+```
+
+   Ele salva `winutils.exe` e `hadoop.dll` (hadoop-3.3.6/bin de https://github.com/cdarlint/winutils) em `tools/hadoop/bin` e imprime os dois comandos do passo 2. Manualmente: salve os dois arquivos em `C:\hadoop\bin` e use `C:\hadoop` como `HADOOP_HOME`.
+2. Em **cada** sessão do PowerShell, antes de rodar o pipeline ou os testes (ajuste o caminho se usou outra pasta):
+
+```powershell
+$env:HADOOP_HOME = "$PWD\tools\hadoop"
 $env:Path = "$env:HADOOP_HOME\bin;$env:Path"
 ```
 
@@ -138,7 +143,7 @@ Exemplo: `ANO_RELATORIO=2024 OUTPUT_PATH=/tmp/rel2024 python main.py`.
 pytest
 ```
 
-São 20 testes (`tests/`): filtro de status/fraude (inclusive nulos), filtro de 2025 (bordas do ano), cálculo do valor total, join, colunas finais, ordenação, fluxo de ponta a ponta, caminho de erro (log + `RelatorioPedidosError`), contagens em log, orquestração com *mocks* injetados, configuração (YAML/ambiente), schemas explícitos, leitura/escrita parquet e execução completa da `Application` com dados em disco temporário. Usam **uma única** `SparkSession` local, criada na fixture de escopo de sessão de `tests/conftest.py` (a suíte leva cerca de 1 min, quase todo gasto na inicialização do Spark/JVM e nos jobs locais).
+São 22 testes (`tests/`): filtro de status/fraude (inclusive nulos), filtro de 2025 (bordas do ano), cálculo do valor total, join, colunas finais, ordenação, fluxo de ponta a ponta, caminho de erro (log + `RelatorioPedidosError`), contagens em log, orquestração com *mocks* injetados, configuração (YAML/ambiente), schemas explícitos, leitura/escrita parquet e execução completa da `Application` com dados em disco temporário. Usam **uma única** `SparkSession` local, criada na fixture de escopo de sessão de `tests/conftest.py` (a suíte leva cerca de 1 min, quase todo gasto na inicialização do Spark/JVM e nos jobs locais).
 
 Lint/formatação: `ruff check .` e `ruff format --check .`.
 
@@ -162,6 +167,7 @@ Lint/formatação: `ruff check .` e `ruff format --check .`.
 │       ├── contracts.py                 # Protocols: DataSource, ReportBuilder, DataSink
 │       └── pipeline.py                  # Pipeline (orquestra leitura -> negócio -> escrita)
 ├── scripts/
+│   ├── setup_windows_hadoop.py          # Windows: baixa winutils.exe e hadoop.dll
 │   ├── download_datasets.py             # baixa os datasets para data/input/
 │   ├── validar_saida.py                 # valida o parquet gerado
 │   └── gerar_evidencias.py              # gera as imagens e o PDF de entrega

@@ -15,6 +15,7 @@ dist/
 # Dados baixados e saída do pipeline (reproduzíveis via scripts/download_datasets.py e main.py)
 data/input/
 data/output/
+tools/
 spark-warehouse/
 metastore_db/
 derby.log

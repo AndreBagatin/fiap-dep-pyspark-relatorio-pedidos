@@ -1,11 +1,13 @@
 import gzip
 import json
+from datetime import datetime
 from dataclasses import replace
 
 import pytest
 from pyspark.sql.types import StructType
 
 from main import Application
+from relatorio_pedidos.business.relatorio_pedidos import RelatorioPedidos
 from relatorio_pedidos.config.settings import Settings
 from relatorio_pedidos.io_utils.readers import DataReader
 from relatorio_pedidos.io_utils.schemas import PagamentosSchema, PedidosSchema
@@ -121,3 +123,33 @@ def test_aplicacao_propaga_erro_e_encerra_a_sessao_quando_a_entrada_nao_existe(t
         Application(config_path=str(arquivo)).run()
 
     assert encerrada == [True]
+
+
+def test_ordem_do_relatorio_e_mantida_no_parquet_gravado(spark, dados, make_pedidos, make_pagamentos):
+    pedidos = make_pedidos(
+        [
+            ("e", 10, 1, datetime(2025, 5, 1), "SP"),
+            ("d", 10, 1, datetime(2025, 4, 1), "SP"),
+            ("c", 10, 1, datetime(2025, 3, 1), "RJ"),
+            ("b", 10, 1, datetime(2025, 2, 1), "RJ"),
+            ("a", 10, 2, datetime(2025, 1, 1), "AC"),
+        ]
+    )
+    formas = {"a": "PIX", "b": "PIX", "c": "BOLETO", "d": "PIX", "e": "PIX"}
+    pagamentos = make_pagamentos([(i, forma, False, False) for i, forma in formas.items()])
+    relatorio = RelatorioPedidos(ano=2025).gerar_relatorio(pedidos, pagamentos)
+
+    caminho = ParquetWriter(dados).write(relatorio)
+
+    lido = [r.id_pedido for r in spark.read.parquet(caminho).collect()]
+    assert lido == ["a", "c", "b", "d", "e"]
+
+
+def test_join_gera_uma_linha_por_pedido_sem_duplicidade(make_pedidos, make_pagamentos):
+    pedidos = make_pedidos([(f"p{n}", 10, 1, datetime(2025, 1, n), "SP") for n in range(1, 6)])
+    pagamentos = make_pagamentos([(f"p{n}", "PIX", False, False) for n in range(1, 6)])
+
+    df = RelatorioPedidos(ano=2025).gerar_relatorio(pedidos, pagamentos)
+
+    assert df.count() == 5
+    assert df.select("id_pedido").distinct().count() == 5

@@ -7,6 +7,7 @@ e os datasets em data/input/ (scripts/download_datasets.py).
 Uso:  python scripts/gerar_evidencias.py
 """
 
+import os
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -174,8 +175,10 @@ class Executor:
     """Executa comandos do projeto e captura a saída sem o ruído do Spark/JVM."""
 
     def run(self, args: list[str]) -> str:
+        # Força UTF-8 no processo filho: no Windows ele usaria a code page do console (cp1252).
+        ambiente = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
         proc = subprocess.run(
-            args, cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", errors="replace"
+            args, cwd=RAIZ, capture_output=True, text=True, encoding="utf-8", errors="replace", env=ambiente
         )
         saida = proc.stdout + "\n" + proc.stderr
         linhas = [ln for ln in saida.splitlines() if not any(r in ln for r in RUIDO)]
@@ -301,7 +304,7 @@ class PdfBuilder:
                     "<font name='Courier'>python scripts/validar_saida.py</font> (confere o parquet) e "
                     "<font name='Courier'>pytest</font> (testes)",
                     "Fuso: timestamps interpretados em UTC (configurável em config/settings.yaml), "
-                    "de modo que data_pedido no parquet é idêntica ao CSV em qualquer leitor.",
+                    "de modo que data_pedido é idêntica ao CSV ao ler o parquet em UTC (ver README).",
                 ],
             ),
         ]

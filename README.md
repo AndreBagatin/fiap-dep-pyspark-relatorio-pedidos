@@ -37,7 +37,7 @@ Ordenação: `uf`, `forma_pagamento`, `data_pedido` (e `id_pedido` apenas como d
 * **Recusado e legítimo** = `status == false` **e** `avaliacao_fraude.fraude == false`. Registros com `status` ou `fraude` nulos não entram (não há como afirmar que foram recusados/legítimos).
 * Resultado com os dados reais: **1.473 pedidos**.
 * Tipos numéricos como `double` (e não `float`) para não introduzir erro de arredondamento no valor total.
-* **Fuso horário:** os timestamps (sem fuso) são interpretados no fuso configurado em `spark.timezone` (padrão `UTC`); assim `data_pedido` é idêntica ao CSV de origem e não depende do fuso da máquina, seja lido com Spark, pandas ou pyarrow. Para outro fuso, altere `spark.timezone` (os leitores fora do Spark mostrarão o instante em UTC).
+* **Fuso horário:** os timestamps (sem fuso) são interpretados no fuso configurado em `spark.timezone` (padrão `UTC`); assim o instante gravado no parquet não depende do fuso da máquina e `data_pedido` é idêntica ao CSV de origem quando lida em UTC (pandas e pyarrow mostram UTC; no Spark, use `spark.sql.session.timeZone=UTC`, como o `main.py` e o `scripts/validar_saida.py` já fazem). Uma sessão Spark em outro fuso (ex.: America/Sao_Paulo) exibirá o mesmo instante deslocado (UTC−3). Para outro fuso de interpretação do CSV, altere `spark.timezone`.
 * O `config/settings.yaml` fica fora do pacote de propósito (configuração externa ao código, como no material do professor); com `pip install .` use-o a partir da raiz do projeto ou aponte `RELATORIO_CONFIG`.
 * O parquet é gravado em **1 partição** (`coalesce(1)` depois da ordenação), de modo que a ordem global do relatório fica preservada no arquivo.
 
@@ -82,7 +82,7 @@ source .venv/bin/activate
 #   .\.venv\Scripts\Activate.ps1
 
 pip install -r requirements.txt   # execução e testes (pyspark, pyyaml, pytest)
-pip install .                       # instala o pacote relatorio_pedidos
+pip install .                       # OBRIGATÓRIO: instala o pacote relatorio_pedidos, importado pelo main.py
 # opcional, para lint e para regerar o PDF: pip install -r requirements-dev.txt
 ```
 

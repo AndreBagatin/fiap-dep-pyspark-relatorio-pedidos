@@ -77,6 +77,7 @@ if __name__ == "__main__":
         SparkSession.builder.appName("validar-saida")
         .master(configuracao.master)
         .config("spark.sql.shuffle.partitions", configuracao.shuffle_partitions)
+        .config("spark.sql.session.timeZone", configuracao.timezone)
         .config("spark.ui.showConsoleProgress", "false")
         .getOrCreate()
     )
